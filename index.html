@@ -102,7 +102,12 @@ ImgCompress.prototype = {
         var self = this;
 
         //获取上传图片
-        var url = webkitURL.createObjectURL( self.file );
+        
+            //获取上传图片
+            URL = window.URL && window.URL.createObjectURL ? window.URL :
+             window.webkitURL && window.webkitURL.createObjectURL ? window.webkitURL :
+                false;
+        var url = URL.createObjectURL( self.file );
         var oImg = new Image();
         oImg.src = url;
 
