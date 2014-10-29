@@ -11,6 +11,7 @@
 <form action="">
     <input id="file1" type="file">    
 </form>
+<canvas id="canvas1"></canvas>
 <script>
 
 /*
@@ -39,192 +40,193 @@
 
  */
 
-var obj = null;
+// var obj = null;
 
-function ImgCompress(){
+// function ImgCompress(){
 
-    //单例模式
-    if( !obj ){
-        obj = this;
-        //创建canvas
-        var oCanvas = document.createElement('canvas');
-        oCanvas.id = 'canvas'+Math.random();
-        oCanvas.style.backgroundColor = 'black';
-        oCanvas.style.display = 'none';
-        document.body.appendChild(oCanvas);
-        this.canva = oCanvas;
-    }else{
-        return obj;
-    }   
+//     //单例模式
+//     if( !obj ){
+//         obj = this;
+//         //创建canvas
+//         var oCanvas = document.createElement('canvas');
+//         oCanvas.id = 'canvas'+Math.random();
+//         oCanvas.style.backgroundColor = 'black';
+//         oCanvas.style.display = 'none';
+//         document.body.appendChild(oCanvas);
+//         this.canva = oCanvas;
+//     }else{
+//         return obj;
+//     }   
 
-    this.response = {
-       fail: {type: -1, msg: "不符合压缩比例", data: false},
-       same: {type: 0, msg: "不用压缩", data: false},
-       done: {type: 1, msg: "压缩成功", data: null}
-    };
+//     this.response = {
+//        fail: {type: -1, msg: "不符合压缩比例", data: false},
+//        same: {type: 0, msg: "不用压缩", data: false},
+//        done: {type: 1, msg: "压缩成功", data: null}
+//     };
     
-    //上传图片数据
-    this.uploadData = {
-        width: 0,
-        height: 0,
-        scale: 1
-    };
+//     //上传图片数据
+//     this.uploadData = {
+//         width: 0,
+//         height: 0,
+//         scale: 1
+//     };
 
-    //压缩图片数据
-    this.compressData = {
-        width: 0,
-        height: 0,
-        scale: 1,
-        maxSize: 0
-    };
+//     //压缩图片数据
+//     this.compressData = {
+//         width: 0,
+//         height: 0,
+//         scale: 1,
+//         maxSize: 0
+//     };
 
-}
+// }
 
-ImgCompress.prototype = {
+// ImgCompress.prototype = {
 
-    init: function (opts, fn){
-        var self = this;
+//     init: function (opts, fn){
+//         var self = this;
 
-        self.fn = fn;
+//         self.fn = fn;
         
-        self.file = opts.file;
-        self._compressImg = '';
+//         self.file = opts.file;
+//         self._compressImg = '';
 
-        self.compressData.width = opts.width;
-        self.compressData.height = opts.height;
-        self.compressData.scale = opts.width / opts.height;
-        self.compressData.maxSize = opts.maxSize * 1024;
+//         self.compressData.width = opts.width;
+//         self.compressData.height = opts.height;
+//         self.compressData.scale = opts.width / opts.height;
+//         self.compressData.maxSize = opts.maxSize * 1024;
 
-        self._setUp();
-    },
+//         self._setUp();
+//     },
 
-    _setUp: function ( fn ){
-        var self = this;
+//     _setUp: function ( fn ){
+//         var self = this;
 
-        //获取上传图片
+//         //获取上传图片
         
-            //获取上传图片
-            URL = window.URL && window.URL.createObjectURL ? window.URL :
-             window.webkitURL && window.webkitURL.createObjectURL ? window.webkitURL :
-                false;
-        var url = URL.createObjectURL( self.file );
-        var oImg = new Image();
-        oImg.src = url;
-
-        oImg.onload = function() {
-            
-            //上传图片数据
-            self.uploadData.width = oImg.width;
-            self.uploadData.height = oImg.height;
-            self.uploadData.scale = self.uploadData.width / self.uploadData.height;
-
-            //不符合比例
-            if( self.compressData.scale !== self.uploadData.scale ){
-                self.fn && self.fn(self.response.fail);
-            }else{
-                //如果图片太大,就压缩
-                if( self.file.size > self.compressData.maxSize ){
-                    var data = self._setupCompress.call(self, oImg);
-
-                    self.response.done.data = data;
-                    self.fn && self.fn(self.response.done);
-                }else{                    
-                    self.fn && self.fn(self.response.same);
-                }
-            }
- 
-        };
-    },
-
-    //压缩图片
-    _setupCompress: function (oImg){
-        var self = this;
-        var oContext = self.canva.getContext('2d');
-
-        //压缩的尺寸
-        var compressW = self.uploadData.width,    
-            compressH = self.uploadData.height;
-        var bResetDimention = self.uploadData.width > self.compressData.width ? true : false;  //如果大于指定尺寸,就要裁成指定尺寸                    
-        if(  bResetDimention  ){                        
-            compressW = self.compressData.width;
-            compressH = self.compressData.height;
-        }
-
-        //把图画到canvas上
-        $( self.canva ).attr( {width : compressW, height : compressH} );
-        oContext.drawImage(oImg, 0, 0, compressW, compressH);
-
-        //拿canvas上的图像数据
-        if( bResetDimention ){                        
-            self._compressImg = self.canva.toDataURL('image/jpeg');
-        }else{
-            self._compressImg = self.canva.toDataURL('image/jpeg', 0.8);
-        }
-
-        return self._compressImg;
-    },    
-
-    getData: function (){       
-        return this._compressImg;
-    },
-
-    constructor: ImgCompress
-
-};
-
-
-var oImgCompress = new ImgCompress();
-$(':file').on('change',function(){      
-
-    var file = this.files[0];  
-    var reg = /^image\/(jpg|jpeg|png|gif)$/g;  
-    var aRes = file.type.match(reg);
-    if( aRes && aRes.length !== 1 ){
-        alert('您上传的不是图片哦！');
-        $(':file').val('');
-        return;
-    }
-
-    oImgCompress.init({
-        file: file,
-        width: 960,
-        height: 540,
-        maxSize: 50
-    }, function (response){
-        console.log(response);
-    });
-});
-
-
-// $(':file').on('change',function(){
-//         var file = this.files[0];
-//         var url = webkitURL.createObjectURL(file);
- 
-//         /* 生成图片
-//         * ---------------------- */
+//             //获取上传图片
+//             URL = window.URL && window.URL.createObjectURL ? window.URL :
+//              window.webkitURL && window.webkitURL.createObjectURL ? window.webkitURL :
+//                 false;
+//         var url = URL.createObjectURL( self.file );
 //         var oImg = new Image();
 //         oImg.src = url;
-//         oImg.onload = function() {
- 
-//             //生成比例
-//             var width = oImg.width,
-//                     height = oImg.height,
-//                     scale = width / height;
-//             //width = parseInt(1000);
-//             height = parseInt(width / scale,0.8);
- 
-//             //生成canvas
-//             var self.canva = $('#canvas1');
-//             var oContext = self.canva[0].getContext('2d');
-//             self.canva.attr({width : width, height : height});
-//             oContext.drawImage(oImg, 0, 0, width, height);
-//             var base64 = self.canva[0].toDataURL('image/jpeg');           
 
-//             console.log(base64);
+//         oImg.onload = function() {
+            
+//             //上传图片数据
+//             self.uploadData.width = oImg.width;
+//             self.uploadData.height = oImg.height;
+//             self.uploadData.scale = self.uploadData.width / self.uploadData.height;
+
+//             //不符合比例
+//             if( self.compressData.scale !== self.uploadData.scale ){
+//                 self.fn && self.fn(self.response.fail);
+//             }else{
+//                 //如果图片太大,就压缩
+//                 if( self.file.size > self.compressData.maxSize ){
+//                     var data = self._setupCompress.call(self, oImg);
+
+//                     self.response.done.data = data;
+//                     self.fn && self.fn(self.response.done);
+//                 }else{                    
+//                     self.fn && self.fn(self.response.same);
+//                 }
+//             }
  
+//         };
+//     },
+
+//     //压缩图片
+//     _setupCompress: function (oImg){
+//         var self = this;
+//         var oContext = self.canva.getContext('2d');
+
+//         //压缩的尺寸
+//         var compressW = self.uploadData.width,    
+//             compressH = self.uploadData.height;
+//         var bResetDimention = self.uploadData.width > self.compressData.width ? true : false;  //如果大于指定尺寸,就要裁成指定尺寸                    
+//         if(  bResetDimention  ){                        
+//             compressW = self.compressData.width;
+//             compressH = self.compressData.height;
 //         }
- 
+
+//         //把图画到canvas上
+//         $( self.canva ).attr( {width : compressW, height : compressH} );
+//         oContext.drawImage(oImg, 0, 0, compressW, compressH);
+
+//         //拿canvas上的图像数据
+//         if( bResetDimention ){                        
+//             self._compressImg = self.canva.toDataURL('image/jpeg');
+//         }else{
+//             self._compressImg = self.canva.toDataURL('image/jpeg', 0.8);
+//         }
+
+//         return self._compressImg;
+//     },    
+
+//     getData: function (){       
+//         return this._compressImg;
+//     },
+
+//     constructor: ImgCompress
+
+// };
+
+
+// var oImgCompress = new ImgCompress();
+// $(':file').on('change',function(){      
+
+//     var file = this.files[0];  
+//     var reg = /^image\/(jpg|jpeg|png|gif)$/g;  
+//     var aRes = file.type.match(reg);
+//     if( aRes && aRes.length !== 1 ){
+//         alert('您上传的不是图片哦！');
+//         $(':file').val('');
+//         return;
+//     }
+
+//     oImgCompress.init({
+//         file: file,
+//         width: 960,
+//         height: 540,
+//         maxSize: 50
+//     }, function (response){
+//         console.log(response);
 //     });
+// });
+
+
+$(':file').on('change',function(){
+        var file = this.files[0];
+        var url = webkitURL.createObjectURL(file);
+ 
+        /* 生成图片
+        * ---------------------- */
+        var oImg = new Image();
+        oImg.src = url;
+        oImg.onload = function() {
+ 
+            //生成比例
+            var width = oImg.width,
+                    height = oImg.height,
+                    scale = width / height;
+            //width = parseInt(1000);
+            height = parseInt(width / scale,0.8);
+            
+
+            //生成canvas
+            $canva = $('#canvas1');
+            var oContext = $canva[0].getContext('2d');
+            $canva.attr({width : width, height : height});
+            oContext.drawImage(oImg, 0, 0, width, height);
+            var base64 = $canva[0].toDataURL('image/jpeg',0.8);           
+
+            console.log(base64);
+ 
+        }
+ 
+    });
 
 
 
